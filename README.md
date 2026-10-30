@@ -17,7 +17,7 @@ A phpBB 4.0+ extension that lets each registered user automatically subscribe to
 
 ## Requirements
 
-- phpBB 4.0.0-a1 or newer
+- phpBB 4.0.0 or newer
 - PHP 8.2 or newer
 
 ## Installation
