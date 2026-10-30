@@ -19,7 +19,7 @@
     "extra": {
         "display-name": "Auto-subscribe own topics",
         "soft-require": {
-            "phpbb/phpbb": ">=4.0.0"
+            "phpbb/phpbb": ">=4.0.0,<4.1.0@dev"
         }
     }
 }
