@@ -1,0 +1,25 @@
+{
+    "name": "bennybernaer/autowatchowntopics",
+    "type": "phpbb-extension",
+    "description": "Automatically subscribes users to topics they create, controlled by a UCP posting preference.",
+    "homepage": "https://ana4life.nl/",
+    "version": "1.0.0",
+    "time": "2026-10-30",
+    "license": "GPL-2.0-only",
+    "authors": [
+        {
+            "name": "bennybernaer",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "composer/installers": "^2.0"
+    },
+    "extra": {
+        "display-name": "Auto-subscribe own topics",
+        "soft-require": {
+            "phpbb/phpbb": ">=4.0.0"
+        }
+    }
+}
