@@ -1,0 +1,7 @@
+<dl>
+	<dt><label for="autowatch_own_topics1">{L_AUTOWATCH_OWN_TOPICS}{L_COLON}</label><br><span>{L_AUTOWATCH_OWN_TOPICS_EXPLAIN}</span></dt>
+	<dd>
+		<label for="autowatch_own_topics1"><input type="radio" name="autowatch_own_topics" id="autowatch_own_topics1" value="1"{% if S_AUTOWATCH_OWN_TOPICS %} checked="checked"{% endif %}> {L_YES}</label>
+		<label for="autowatch_own_topics0"><input type="radio" name="autowatch_own_topics" id="autowatch_own_topics0" value="0"{% if not S_AUTOWATCH_OWN_TOPICS %} checked="checked"{% endif %}> {L_NO}</label>
+	</dd>
+</dl>
