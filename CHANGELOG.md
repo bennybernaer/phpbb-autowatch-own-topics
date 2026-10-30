@@ -19,5 +19,5 @@ All notable changes to this extension are documented here.
 - Respects manual per-topic unsubscribe choices while the preference remains enabled.
 
 ### Compatibility
-- First public release targeted at phpBB 4.0.0-a1 and newer.
+- First public release targeted at phpBB 4.0.0 and newer.
 - Requires PHP 8.2 or newer.
