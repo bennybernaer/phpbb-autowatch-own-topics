@@ -1,0 +1,45 @@
+name: Sync release README
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sync-release-readme.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update README inside latest release ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/release /tmp/unpack
+          tag="$(gh release view --json tagName -q .tagName)"
+          asset="$(gh release view "$tag" --json assets -q '.assets[] | select(.name | endswith(".zip")) | .name' | head -n1)"
+          test -n "$asset"
+          gh release download "$tag" --pattern "$asset" --dir /tmp/release
+          unzip -q "/tmp/release/$asset" -d /tmp/unpack
+          pkg_readme="$(find /tmp/unpack -type f -iname 'README.md' -printf '%d %p\n' | sort -n | head -n1 | cut -d' ' -f2-)"
+          test -n "$pkg_readme"
+          cp README.md "$pkg_readme"
+          rm "/tmp/release/$asset"
+          (cd /tmp/unpack && zip -qr "/tmp/release/$asset" .)
+          gh release upload "$tag" "/tmp/release/$asset" --clobber
+          if [ -f "downloads/$asset" ]; then
+            cp "/tmp/release/$asset" "downloads/$asset"
+          fi
+
+      - name: Remove temporary workflow and save download copy
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/sync-release-readme.yml
+          git add downloads 2>/dev/null || true
+          git commit -m "Sync release ZIP README"
+          git push
