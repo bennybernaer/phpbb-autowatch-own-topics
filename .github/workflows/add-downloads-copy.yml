@@ -1,0 +1,41 @@
+name: Add release ZIP to downloads
+
+on:
+  push:
+    paths:
+      - '.github/workflows/add-downloads-copy.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  add-download:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download existing release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p downloads
+          gh release download 1.0.0 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'bennybernaer_autowatchowntopics_1.0.0.zip' \
+            --dir downloads
+
+      - name: Commit downloads copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/add-downloads-copy.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add release ZIP to downloads"
+          git push
