@@ -1,0 +1,35 @@
+name: Check release README
+on: push
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare repository README with release ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          mkdir -p /tmp/release /tmp/unpack
+          tag="$(gh release view --json tagName -q .tagName 2>/dev/null || true)"
+          if [ -z "$tag" ]; then echo "RESULT=NO_RELEASE"; exit 0; fi
+          gh release download "$tag" --pattern '*.zip' --dir /tmp/release
+          zipfile="$(find /tmp/release -maxdepth 1 -type f -name '*.zip' | head -n1)"
+          if [ -z "$zipfile" ]; then echo "RESULT=NO_ZIP"; exit 0; fi
+          unzip -q "$zipfile" -d /tmp/unpack
+          pkg_readme="$(find /tmp/unpack -type f -iname 'README.md' -printf '%d %p\n' | sort -n | head -n1 | cut -d' ' -f2-)"
+          if [ ! -f README.md ]; then echo "RESULT=REPO_README_MISSING"; exit 0; fi
+          if [ -z "$pkg_readme" ]; then echo "RESULT=ZIP_README_MISSING"; exit 0; fi
+          tr -d '\r' < README.md > /tmp/repo-readme
+          tr -d '\r' < "$pkg_readme" > /tmp/zip-readme
+          if cmp -s /tmp/repo-readme /tmp/zip-readme; then echo "RESULT=MATCH"; else echo "RESULT=MISMATCH"; fi
+      - name: Remove temporary workflow
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/check-release-readme.yml
+          git commit -m "Remove temporary README check workflow"
+          git push
