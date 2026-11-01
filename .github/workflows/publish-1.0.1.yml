@@ -1,0 +1,25 @@
+name: Publish 1.0.1 release
+
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-1.0.1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish release 1.0.1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create 1.0.1 \
+            downloads/bennybernaer_autowatchowntopics_1.0.1.zip \
+            --target 9429ef0a2d421ecd3fe9de82923ea2c370b55014 \
+            --title "Auto-subscribe own topics 1.0.1" \
+            --notes "## Auto-subscribe own topics 1.0.1\n\n### Fixed\n- Removes stale phpBB notifications when the related post is deleted.\n- Cleans reply, mention, quote, bookmark, forum-watch and post-approval notifications linked to the deleted post.\n- Also removes topic-level notifications when an entire topic is deleted.\n\n### Requirements\n- phpBB 4.0.0 or newer\n- PHP 8.2 or newer"
