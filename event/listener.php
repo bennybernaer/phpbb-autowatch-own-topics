@@ -18,6 +18,7 @@ class listener implements EventSubscriberInterface
 	protected \phpbb\template\template $template;
 	protected \phpbb\config\config $config;
 	protected \phpbb\auth\auth $auth;
+	protected \phpbb\notification\manager $notification_manager;
 	protected string $settings_table;
 
 	public function __construct(
@@ -27,6 +28,7 @@ class listener implements EventSubscriberInterface
 		\phpbb\template\template $template,
 		\phpbb\config\config $config,
 		\phpbb\auth\auth $auth,
+		\phpbb\notification\manager $notification_manager,
 		string $table_prefix
 	)
 	{
@@ -36,6 +38,7 @@ class listener implements EventSubscriberInterface
 		$this->template = $template;
 		$this->config = $config;
 		$this->auth = $auth;
+		$this->notification_manager = $notification_manager;
 		$this->settings_table = $table_prefix . 'bennybernaer_autowatch_users';
 	}
 
@@ -45,9 +48,13 @@ class listener implements EventSubscriberInterface
 			'core.ucp_prefs_post_data'              => 'ucp_prefs_post_data',
 			'core.ucp_prefs_post_update_data'       => 'ucp_prefs_post_update_data',
 			'core.posting_modify_submit_post_after' => 'posting_modify_submit_post_after',
+			'core.delete_post_after'                => 'delete_post_after',
 		];
 	}
 
+	/**
+	 * Add the preference to UCP > Board preferences > Edit posting defaults.
+	 */
 	public function ucp_prefs_post_data($event): void
 	{
 		if (!$this->user->data['is_registered'])
@@ -68,6 +75,13 @@ class listener implements EventSubscriberInterface
 		$this->template->assign_var('S_AUTOWATCH_OWN_TOPICS', (bool) $data['autowatch_own_topics']);
 	}
 
+	/**
+	 * Save the preference.
+	 *
+	 * Existing own topics are imported only when the preference changes from
+	 * disabled to enabled. This intentionally preserves later manual
+	 * unsubscribes when the UCP page is saved again while still enabled.
+	 */
 	public function ucp_prefs_post_update_data($event): void
 	{
 		if (!$this->user->data['is_registered'])
@@ -101,6 +115,9 @@ class listener implements EventSubscriberInterface
 		}
 	}
 
+	/**
+	 * Subscribe the author after a new topic has been created successfully.
+	 */
 	public function posting_modify_submit_post_after($event): void
 	{
 		if ($event['mode'] !== 'post' || !$this->user->data['is_registered'])
@@ -125,12 +142,48 @@ class listener implements EventSubscriberInterface
 			return;
 		}
 
+		// For a newly created topic, submit_post() stores the new topic ID in data.
+		// The separate topic_id event value can still be 0 in mode=post.
 		$data = $event['data'];
 		$topic_id = !empty($data['topic_id']) ? (int) $data['topic_id'] : (int) $event['topic_id'];
 
 		if ($topic_id)
 		{
 			$this->subscribe_topic($user_id, $topic_id);
+		}
+	}
+
+	/**
+	 * Remove stale board notifications when a post or topic is deleted.
+	 *
+	 * phpBB notifications for replies, mentions, quotes, bookmarks and forum
+	 * watches use the post ID as their item ID. When an entire topic is
+	 * deleted, topic-level notifications use the topic ID instead.
+	 */
+	public function delete_post_after($event): void
+	{
+		$post_id = (int) $event['post_id'];
+		$topic_id = (int) $event['topic_id'];
+		$post_mode = (string) $event['post_mode'];
+
+		if ($post_id)
+		{
+			$this->notification_manager->delete_notifications_by_types([
+				'notification.type.post',
+				'notification.type.mention',
+				'notification.type.quote',
+				'notification.type.bookmark',
+				'notification.type.approve_post',
+				'notification.type.forum',
+			], $post_id);
+		}
+
+		if ($post_mode === 'delete_topic' && $topic_id)
+		{
+			$this->notification_manager->delete_notifications_by_types([
+				'notification.type.topic',
+				'notification.type.approve_topic',
+			], $topic_id);
 		}
 	}
 
@@ -182,6 +235,7 @@ class listener implements EventSubscriberInterface
 		{
 			$forum_id = (int) $row['forum_id'];
 
+			// Global topics can have forum_id 0. Regular topics honour f_subscribe.
 			if ($forum_id && !$this->auth->acl_get('f_subscribe', $forum_id))
 			{
 				continue;
