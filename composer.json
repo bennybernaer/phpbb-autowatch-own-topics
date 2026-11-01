@@ -3,8 +3,8 @@
     "type": "phpbb-extension",
     "description": "Automatically subscribes users to topics they create, controlled by a UCP posting preference.",
     "homepage": "https://ana4life.nl/",
-    "version": "1.0.0",
-    "time": "2026-10-30",
+    "version": "1.0.1",
+    "time": "2026-11-01",
     "license": "GPL-2.0-only",
     "authors": [
         {
